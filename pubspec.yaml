@@ -1,0 +1,4 @@
+dependencies:
+  flutter:
+    sdk: flutter
+  google_sign_in: ^6.2.1
