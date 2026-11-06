@@ -67,7 +67,6 @@ def get_image_base64(file_path):
   return ""
 
 
-# Direct relative path for Streamlit Cloud and GitHub root structure
 logo_path = "logo.png"
 logo_b64 = get_image_base64(logo_path)
 
