@@ -40,15 +40,15 @@ page_param = query_params.get("page", None)
 if isinstance(page_param, list):
   page_param = page_param[0] if page_param else None
 
-# Session States Initialization
+# Session States Initialization - Force splash screen on fresh load
 if "show_splash" not in st.session_state:
-  st.session_state["show_splash"] = False if page_param else True
+  st.session_state["show_splash"] = True
 
 if "show_google_auth" not in st.session_state:
   st.session_state["show_google_auth"] = False
 
 if "logged_in" not in st.session_state:
-  st.session_state["logged_in"] = True if page_param else False
+  st.session_state["logged_in"] = False
 
 current_page = page_param if page_param else "home"
 if current_page not in ["home", "youtube", "facebook", "instagram", "refresh"]:
@@ -60,7 +60,6 @@ if current_page == "refresh":
 
 
 def get_image_base64(filename):
-  # BASE_DIR hmanga a hmun dik tak atanga zawn chhuahna leh case-insensitive check
   target_path = os.path.join(BASE_DIR, filename)
   if not os.path.exists(target_path):
     base_name = filename.lower()
