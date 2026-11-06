@@ -59,19 +59,26 @@ if current_page == "refresh":
   current_page = "home"
 
 
-def get_image_base64(file_path):
-  if os.path.exists(file_path):
-    with open(file_path, "rb") as f:
+def get_image_base64(filename):
+  # BASE_DIR hmanga a hmun dik tak atanga zawn chhuahna leh case-insensitive check
+  target_path = os.path.join(BASE_DIR, filename)
+  if not os.path.exists(target_path):
+    base_name = filename.lower()
+    if os.path.exists(BASE_DIR):
+      for f in os.listdir(BASE_DIR):
+        if f.lower() == base_name:
+          target_path = os.path.join(BASE_DIR, f)
+          break
+
+  if os.path.exists(target_path):
+    with open(target_path, "rb") as f:
       data = f.read()
     return f"data:image/png;base64,{base64.b64encode(data).decode()}"
   return ""
 
 
-logo_path = "logo.png"
-logo_b64 = get_image_base64(logo_path)
-
-theme_img_path = "theme.png"
-theme_img_b64 = get_image_base64(theme_img_path)
+logo_b64 = get_image_base64("logo.png")
+theme_img_b64 = get_image_base64("theme.png")
 
 # --- 1. SPLASH SCREEN ---
 if st.session_state["show_splash"]:
