@@ -12,22 +12,31 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# Base directory setting (Linux & Windows compatible)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Function to encode local image to Base64
-def get_image_base64(file_path):
-  if os.path.exists(file_path):
-    with open(file_path, "rb") as f:
+
+# Function to encode local image to Base64 with case-insensitive fallback
+def get_image_base64(filename):
+  target_path = os.path.join(BASE_DIR, filename)
+  if not os.path.exists(target_path):
+    base_name = filename.lower()
+    if os.path.exists(BASE_DIR):
+      for f in os.listdir(BASE_DIR):
+        if f.lower() == base_name:
+          target_path = os.path.join(BASE_DIR, f)
+          break
+
+  if os.path.exists(target_path):
+    with open(target_path, "rb") as f:
       data = f.read()
     return f"data:image/png;base64,{base64.b64encode(data).decode()}"
   return ""
 
 
-# Paths
-logo_path = r"E:\video_downloader\logo.png"
-logo_b64 = get_image_base64(logo_path)
-
-theme_img_path = r"E:\video_downloader\theme.png"
-theme_img_b64 = get_image_base64(theme_img_path)
+# Paths using BASE_DIR instead of hardcoded Windows E:\ drive
+logo_b64 = get_image_base64("logo.png")
+theme_img_b64 = get_image_base64("theme.png")
 
 # Session state initialization
 if "show_splash" not in st.session_state:
