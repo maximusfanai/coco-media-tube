@@ -65,15 +65,15 @@ def get_image_base64(file_path):
   return ""
 
 
-logo_path = r"E:\video_downloader\logo.png"
+logo_path = "logo.png"
 logo_b64 = get_image_base64(logo_path)
 
-theme_img_path = r"E:\video_downloader\theme.png"
+theme_img_path = "theme.png"
 theme_img_b64 = get_image_base64(theme_img_path)
 
 # --- 1. SPLASH SCREEN ---
 if st.session_state["show_splash"]:
-  splash_path = r"E:\video_downloader\splash.py"
+  splash_path = "splash.py"
   if os.path.exists(splash_path):
     with open(splash_path, encoding="utf-8") as f:
       exec(f.read())
@@ -249,7 +249,7 @@ else:
     )
 
   elif current_page == "youtube":
-    yt_path = r"E:\video_downloader\youtube.py"
+    yt_path = "youtube.py"
     if os.path.exists(yt_path):
       with open(yt_path, encoding="utf-8") as f:
         exec(f.read())
@@ -257,7 +257,7 @@ else:
       st.error(f"File not found: {yt_path}")
 
   elif current_page == "facebook":
-    fb_path = r"E:\video_downloader\facebook.py"
+    fb_path = "facebook.py"
     if os.path.exists(fb_path):
       with open(fb_path, encoding="utf-8") as f:
         exec(f.read())
@@ -265,7 +265,7 @@ else:
       st.error(f"File not found: {fb_path}")
 
   elif current_page == "instagram":
-    ig_path = r"E:\video_downloader\instagram.py"
+    ig_path = "instagram.py"
     if os.path.exists(ig_path):
       with open(ig_path, encoding="utf-8") as f:
         exec(f.read())
