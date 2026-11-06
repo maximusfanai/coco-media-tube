@@ -18,6 +18,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# Base directory setting
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 def scan_media_file(file_path):
   """Triggers Android Media Scanner so downloaded files appear in music/video players instantly."""
@@ -37,16 +40,15 @@ page_param = query_params.get("page", None)
 if isinstance(page_param, list):
   page_param = page_param[0] if page_param else None
 
-# Session States Initialization
+# Session States Initialization - Force splash screen on fresh load
 if "show_splash" not in st.session_state:
-  # App a tir a hawn anih chuan splash a rawn lang ang, link/button atanga lut anih chuan a skip ang
-  st.session_state["show_splash"] = False if page_param else True
+  st.session_state["show_splash"] = True
 
 if "show_google_auth" not in st.session_state:
   st.session_state["show_google_auth"] = False
 
 if "logged_in" not in st.session_state:
-  st.session_state["logged_in"] = True if page_param else False
+  st.session_state["logged_in"] = False
 
 current_page = page_param if page_param else "home"
 if current_page not in ["home", "youtube", "facebook", "instagram", "refresh"]:
@@ -57,23 +59,29 @@ if current_page == "refresh":
   current_page = "home"
 
 
-def get_image_base64(file_path):
-  if os.path.exists(file_path):
-    with open(file_path, "rb") as f:
+def get_image_base64(filename):
+  target_path = os.path.join(BASE_DIR, filename)
+  if not os.path.exists(target_path):
+    base_name = filename.lower()
+    if os.path.exists(BASE_DIR):
+      for f in os.listdir(BASE_DIR):
+        if f.lower() == base_name:
+          target_path = os.path.join(BASE_DIR, f)
+          break
+
+  if os.path.exists(target_path):
+    with open(target_path, "rb") as f:
       data = f.read()
     return f"data:image/png;base64,{base64.b64encode(data).decode()}"
   return ""
 
 
-logo_path = r"E:\video_downloader\logo.png"
-logo_b64 = get_image_base64(logo_path)
-
-theme_img_path = r"E:\video_downloader\theme.png"
-theme_img_b64 = get_image_base64(theme_img_path)
+logo_b64 = get_image_base64("logo.png")
+theme_img_b64 = get_image_base64("theme.png")
 
 # --- 1. SPLASH SCREEN ---
 if st.session_state["show_splash"]:
-  splash_path = r"E:\video_downloader\splash.py"
+  splash_path = os.path.join(BASE_DIR, "splash.py")
   if os.path.exists(splash_path):
     with open(splash_path, encoding="utf-8") as f:
       exec(f.read())
@@ -249,7 +257,7 @@ else:
     )
 
   elif current_page == "youtube":
-    yt_path = r"E:\video_downloader\youtube.py"
+    yt_path = os.path.join(BASE_DIR, "youtube.py")
     if os.path.exists(yt_path):
       with open(yt_path, encoding="utf-8") as f:
         exec(f.read())
@@ -257,7 +265,7 @@ else:
       st.error(f"File not found: {yt_path}")
 
   elif current_page == "facebook":
-    fb_path = r"E:\video_downloader\facebook.py"
+    fb_path = os.path.join(BASE_DIR, "facebook.py")
     if os.path.exists(fb_path):
       with open(fb_path, encoding="utf-8") as f:
         exec(f.read())
@@ -265,7 +273,7 @@ else:
       st.error(f"File not found: {fb_path}")
 
   elif current_page == "instagram":
-    ig_path = r"E:\video_downloader\instagram.py"
+    ig_path = os.path.join(BASE_DIR, "instagram.py")
     if os.path.exists(ig_path):
       with open(ig_path, encoding="utf-8") as f:
         exec(f.read())
