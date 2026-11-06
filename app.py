@@ -18,7 +18,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Base directory setting a hmun dik tak atanga lak nan
+# Base directory setting
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -67,10 +67,11 @@ def get_image_base64(file_path):
   return ""
 
 
-logo_path = os.path.join(BASE_DIR, "logo.png")
+# Direct relative path for Streamlit Cloud and GitHub root structure
+logo_path = "logo.png"
 logo_b64 = get_image_base64(logo_path)
 
-theme_img_path = os.path.join(BASE_DIR, "theme.png")
+theme_img_path = "theme.png"
 theme_img_b64 = get_image_base64(theme_img_path)
 
 # --- 1. SPLASH SCREEN ---
