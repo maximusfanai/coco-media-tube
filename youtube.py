@@ -17,8 +17,13 @@ except Exception:
   cookies_secret = ""
 
 if isinstance(cookies_secret, str) and cookies_secret.strip():
+  cleaned_cookies = cookies_secret.strip()
+  # Netscape header a awm lo a nih pawhin amahin a siam tel nghal ang
+  if not cleaned_cookies.startswith("# Netscape"):
+    cleaned_cookies = "# Netscape HTTP Cookie File\n" + cleaned_cookies
+
   with open(COOKIE_FILE, "w", encoding="utf-8", newline="") as cookie_file:
-    cookie_file.write(cookies_secret.strip() + "\n")
+    cookie_file.write(cleaned_cookies + "\n")
 
 try:
   static_ffmpeg.add_paths()
