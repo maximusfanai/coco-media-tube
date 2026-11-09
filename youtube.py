@@ -6,8 +6,6 @@ import streamlit as st
 import streamlit.components.v1 as components
 import yt_dlp
 
-# YouTube cookies (optional). Keep cookie text in Streamlit Secrets,
-# not in a public repository.
 COOKIE_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "youtube_cookies.txt",
@@ -34,7 +32,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Handle Home Button Reset via Query Params
 query_params = st.query_params
 if query_params.get("page") == "home":
   st.session_state.downloaded_file = None
@@ -43,7 +40,6 @@ if query_params.get("page") == "home":
   st.query_params.clear()
   st.rerun()
 
-# Session States Initialization
 if "downloaded_file" not in st.session_state:
   st.session_state.downloaded_file = None
 if "downloaded_mime" not in st.session_state:
@@ -520,9 +516,7 @@ if not st.session_state.downloaded_file:
         mime_type = "video/webm"
         target_ext = "webm"
       else:
-        ydl_format = (
-            "bestvideo[ext=mp4][vcodec^=avc]+bestaudio[ext=m4a]/best[ext=mp4]/best"
-        )
+        ydl_format = "best[ext=mp4]/best"
         mime_type = "video/mp4"
         target_ext = "mp4"
 
@@ -548,24 +542,20 @@ if not st.session_state.downloaded_file:
 
       cookies_file_path = COOKIE_FILE if os.path.isfile(COOKIE_FILE) else None
 
+      # 🛠️ Updated ydl_opts to bypass YouTube 403 Forbidden error using mweb/android client
       ydl_opts = {
           "format": ydl_format,
           "outtmpl": outtmpl_str,
           "quiet": True,
           "noplaylist": True,
-          "retries": 3,
-          "fragment_retries": 3,
+          "retries": 5,
+          "fragment_retries": 5,
           "socket_timeout": 30,
           "extractor_args": {
               "youtube": {
-                  "player_client": ["android", "web"]
+                  "player_client": ["mweb", "android"]
               }
           },
-          "http_headers": {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-              "Accept-Language": "en-US,en;q=0.5",
-          }
       }
 
       if cookies_file_path:
@@ -660,7 +650,7 @@ if not st.session_state.downloaded_file:
                                     <div class="neon-ring-inner">
                                         <div class="neon-center-video-box">
                                             <div class="neon-inner-screen">
-                                                <div class="neon-play-arrow">▶</div>
+                                                <div class="neon-play-actor">▶</div>
                                             </div>
                                             <div class="neon-dot-badge"></div>
                                         </div>
