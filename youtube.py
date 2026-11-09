@@ -18,7 +18,6 @@ except Exception:
 
 if isinstance(cookies_secret, str) and cookies_secret.strip():
   cleaned_cookies = cookies_secret.strip()
-  # Netscape header a awm lo a nih pawhin amahin a siam tel nghal ang
   if not cleaned_cookies.startswith("# Netscape"):
     cleaned_cookies = "# Netscape HTTP Cookie File\n" + cleaned_cookies
 
@@ -547,7 +546,7 @@ if not st.session_state.downloaded_file:
 
       cookies_file_path = COOKIE_FILE if os.path.isfile(COOKIE_FILE) else None
 
-      # 🛠️ Updated ydl_opts to bypass YouTube 403 Forbidden error using mweb/android client
+      # 🛠️ Updated ydl_opts with ios, android client to bypass 403 Forbidden error completely
       ydl_opts = {
           "format": ydl_format,
           "outtmpl": outtmpl_str,
@@ -558,7 +557,7 @@ if not st.session_state.downloaded_file:
           "socket_timeout": 30,
           "extractor_args": {
               "youtube": {
-                  "player_client": ["mweb", "android"]
+                  "player_client": ["ios", "android"],
               }
           },
       }
