@@ -1,4 +1,3 @@
 streamlit
-yt-dlp>=2026.02.04
-static_ffmpeg
-imageio_ffmpeg
+yt-dlp
+static-ffmpeg
