@@ -39,7 +39,6 @@ if isinstance(page_param, list):
 
 # Session States Initialization
 if "show_splash" not in st.session_state:
-  # App a tir a hawn anih chuan splash a rawn lang ang, link/button atanga lut anih chuan a skip ang
   st.session_state["show_splash"] = False if page_param else True
 
 if "show_google_auth" not in st.session_state:
