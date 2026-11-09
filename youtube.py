@@ -6,8 +6,6 @@ import streamlit as st
 import streamlit.components.v1 as components
 import yt_dlp
 
-# YouTube cookies (optional). Keep cookie text in Streamlit Secrets,
-# not in a public repository.
 COOKIE_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "youtube_cookies.txt",
@@ -34,7 +32,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Handle Home Button Reset via Query Params
 query_params = st.query_params
 if query_params.get("page") == "home":
   st.session_state.downloaded_file = None
@@ -43,7 +40,6 @@ if query_params.get("page") == "home":
   st.query_params.clear()
   st.rerun()
 
-# Session States Initialization
 if "downloaded_file" not in st.session_state:
   st.session_state.downloaded_file = None
 if "downloaded_mime" not in st.session_state:
@@ -65,19 +61,14 @@ st.markdown(
     """
 <style>
 #MainMenu, footer, header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
-
 html, body, .stApp, [data-testid="stAppViewContainer"] {
-    background-color: #04060d !important;
-    color: #ffffff !important;
+    background-color: #04060d !important; color: #ffffff !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    margin: 0 !important; padding: 0 !important;
 }
-
 .main .block-container, [data-testid="stMainBlockContainer"] {
     max-width: 480px !important; width: 100% !important; margin: 0 auto !important; padding: 12px 10px 130px 10px !important;
 }
-
 .header-box { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; margin-top: 2px; }
 .brand-row { display: flex; align-items: center; gap: 8px; }
 .yt-icon { background: #ff0000; color: #ffffff; padding: 4px 10px; border-radius: 8px; font-size: 16px; font-weight: 700; box-shadow: 0 0 12px rgba(255, 0, 0, 0.75); display: flex; align-items: center; justify-content: center; }
@@ -86,302 +77,43 @@ html, body, .stApp, [data-testid="stAppViewContainer"] {
 .title-dark { font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; line-height: 1; }
 .title-red { font-size: 20px; font-weight: 800; color: #ff2236; letter-spacing: -0.5px; line-height: 1; }
 .subtitle-text { font-size: 11px; color: #838d9d; margin-top: 4px; font-weight: 500; }
-
 .top-right-container { display: flex; flex-direction: column; align-items: flex-end; margin-top: 2px; }
 .action-icons-row { display: flex; gap: 10px; margin-bottom: 4px; }
 .icon-btn-style { 
-    background: #090e1c; 
-    border: 1.5px solid rgba(255, 0, 30, 0.5); 
-    border-radius: 8px; 
-    width: 32px; 
-    height: 32px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    cursor: pointer; 
-    text-decoration: none !important;
-    box-shadow: 0 0 8px rgba(255, 0, 30, 0.4);
-    transition: all 0.2s ease;
+    background: #090e1c; border: 1.5px solid rgba(255, 0, 30, 0.5); border-radius: 8px; 
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; 
+    cursor: pointer; text-decoration: none !important; box-shadow: 0 0 8px rgba(255, 0, 30, 0.4);
 }
-.icon-btn-style:hover { border-color: #ff001e; background: #141c2e; }
-
-.graphic-link-container { display: flex; flex-direction: column; align-items: center; }
-.graphic-link { text-decoration: none !important; border-bottom: none !important; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
-.watch-on-yt-text { font-size: 10px; font-weight: 800; color: #ffffff; margin-bottom: 4px; letter-spacing: 0.5px; text-align: center; }
-.graphic-glow { position: relative; width: 96px; height: 70px; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(139,0,0,0.3) 0%, rgba(4,6,13,0) 75%); }
-.video-player-card { width: 84px; height: 48px; background: #090e1c; border: 1.5px solid #8b0000; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(139, 0, 0, 0.6); position: relative; }
-.vp-screen { width: 68px; height: 24px; background: #141c2e; border-radius: 4px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-.vp-play-icon { color: #ff001e; font-size: 18px; }
-.vp-label { font-size: 9px; font-weight: 700; color: #ffffff; margin-top: 1px; }
-.dl-badge-card { position: absolute; bottom: -4px; right: -4px; background: #ff001e; color: #ffffff; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 9px; border: 1.5px solid #04060d; }
-
-.url-input-label { font-size: 12px; font-weight: 600; color: #ffffff; margin-bottom: 4px; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
-
-div[data-baseweb="input"] { background: #090e1c !important; border: 1.5px solid rgba(255, 255, 255, 0.25) !important; border-radius: 12px !important; color: white !important; }
-div[data-baseweb="input"] input { color: white !important; }
-div[data-testid="stTextInput"] div[data-baseweb="input"] ~ div { display: none !important; }
-
-div[data-testid="stRadio"], 
-div[data-testid="stRadio"] > div {
-    width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-div[data-testid="stRadio"] div[role="radiogroup"] { 
-    display: grid !important; 
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 4px !important; 
-    width: 100% !important; 
-}
-
-div[data-testid="stRadio"] div[role="radiogroup"] > div {
-    width: 100% !important;
-    min-width: 0 !important;
-}
-
-div[data-testid="stRadio"] div[role="radiogroup"] label {
-    background-color: #090e1c !important; 
-    border: 1.5px solid rgba(255, 255, 255, 0.4) !important; 
-    border-radius: 8px !important; 
-    padding: 6px 2px !important;
-    height: 38px !important; 
-    min-height: 38px !important;
-    cursor: pointer !important; 
-    display: flex !important; 
-    flex-direction: row !important; 
-    align-items: center !important; 
-    justify-content: center !important;
-    width: 100% !important; 
-    min-width: 0 !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-    transition: all 0.2s ease !important;
-}
-
-div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) {
-    border-color: #ff001e !important; 
-    background-color: #3b0a11 !important; 
-    box-shadow: 0 0 12px rgba(255, 0, 30, 0.5) !important; 
-}
-
-div[data-testid="stRadio"] label > div:first-child { 
-    display: none !important; 
-}
-
-div[data-testid="stRadio"] label > div {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-div[data-testid="stRadio"] div[role="radiogroup"] label p { 
-    font-size: 11px !important; 
-    font-weight: 600 !important; 
-    color: #ffffff !important; 
-    text-align: center !important; 
-    margin: 0 !important; 
-    padding: 0 !important;
-    line-height: 1 !important; 
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    width: 100% !important;
-}
-
-div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p {
-    color: #ffffff !important;
-    font-weight: 800 !important;
-    text-shadow: 0 0 6px rgba(255, 255, 255, 0.8) !important;
-}
-
 .section-label { font-size: 12px; font-weight: 700; color: #ffffff; margin-bottom: 4px; margin-top: 10px; display: flex; align-items: center; gap: 5px; }
-
-.neon-loader-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 8px 0;
-}
+.neon-loader-container { display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 8px 0; }
 .outer-orbit-ring {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: 1.5px solid rgba(139, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    box-shadow: 0 0 10px rgba(100, 0, 0, 0.6), inset 0 0 6px rgba(100, 0, 0, 0.4);
+    width: 80px; height: 80px; border-radius: 50%; border: 1.5px solid rgba(139, 0, 0, 0.5);
+    display: flex; align-items: center; justify-content: center; position: relative;
     background: radial-gradient(circle, rgba(15, 4, 4, 0.9) 0%, rgba(6, 2, 2, 0.99) 100%);
 }
 .neon-ring {
-    width: 66px;
-    height: 66px;
-    border-radius: 50%;
+    width: 66px; height: 66px; border-radius: 50%;
     background: conic-gradient(#ff1e38 0deg, #ff1e38 var(--deg), #4a0005 var(--deg), #4a0005 360deg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 10px rgba(255, 0, 30, 0.5), 0 0 10px rgba(139, 0, 0, 0.6);
-    position: relative;
+    display: flex; align-items: center; justify-content: center; position: relative;
 }
 .neon-ring-inner {
-    width: 54px;
-    height: 54px;
-    background-color: #050202;
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    width: 54px; height: 54px; background-color: #050202; border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
     border: 1px solid rgba(255, 30, 56, 0.2);
 }
-.neon-center-video-box {
-    width: 22px;
-    height: 15px;
-    background: #0f0505;
-    border: 1px solid #8b0000;
-    border-radius: 3px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 4px rgba(139, 0, 0, 0.7);
-    position: relative;
-    margin-bottom: 1px;
-}
-.neon-inner-screen {
-    width: 16px;
-    height: 9px;
-    background: #1a0808;
-    border-radius: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-}
-.neon-play-arrow {
-    color: #ff1e38;
-    font-size: 6px;
-    filter: drop-shadow(0 0 1px #ff1e38);
-}
-.neon-dot-badge {
-    position: absolute;
-    bottom: 1px;
-    right: 1px;
-    width: 3px;
-    height: 3px;
-    background: #ffffff;
-    border-radius: 50%;
-    box-shadow: 0 0 1px #ffffff;
-}
-.neon-percent-text {
-    font-size: 11px;
-    font-weight: 800;
-    color: #ffffff;
-    letter-spacing: -0.5px;
-}
-.loading-title {
-    font-size: 11px;
-    font-weight: 700;
-    color: #ffffff;
-    margin-top: 6px;
-    text-align: center;
-    letter-spacing: -0.3px;
-}
-.loading-subtitle {
-    font-size: 9px;
-    color: #838d9d;
-    margin-top: 1px;
-    text-align: center;
-}
-
-div[data-testid="stButton"] button {
-    background: rgba(8, 20, 38, 0.45) !important;
-    border: 1.5px solid rgba(0, 235, 255, 0.85) !important;
-    border-radius: 8px !important;
-    color: #33f3ff !important;
-    font-weight: 700 !important;
-    box-shadow: 0 0 16px rgba(0, 235, 255, 0.45), inset 0 0 10px rgba(0, 235, 255, 0.25) !important;
-    backdrop-filter: blur(6px) !important;
-    padding: 6px 14px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    transition: all 0.2s ease-in-out !important;
-    box-sizing: border-box !important;
-}
-
-div[data-testid="stDownloadButton"] button {
-    background: rgba(10, 30, 50, 0.65) !important;
-    border: 1.5px solid #00d8ff !important;
-    color: #00d8ff !important;
-    font-weight: 700 !important;
-    border-radius: 8px !important;
-    box-shadow: 0 0 16px rgba(0, 216, 255, 0.5), inset 0 0 10px rgba(0, 216, 255, 0.2) !important;
-    backdrop-filter: blur(6px) !important;
-    padding: 6px 14px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    transition: all 0.2s ease-in-out !important;
-    box-sizing: border-box !important;
-}
-
-div[data-testid="stVideo"] { max-width: 320px !important; margin: 0 auto !important; }
-div[data-testid="stVideo"] video { max-height: 380px !important; object-fit: contain !important; width: 100% !important; }
-
-@media screen and (max-width: 768px) {
-    .main .block-container, [data-testid="stMainBlockContainer"] {
-        padding: 8px 6px 100px 6px !important;
-    }
+.neon-percent-text { font-size: 11px; font-weight: 800; color: #ffffff; }
+.loading-title { font-size: 11px; font-weight: 700; color: #ffffff; margin-top: 6px; text-align: center; }
+.loading-subtitle { font-size: 9px; color: #838d9d; margin-top: 1px; text-align: center; }
+div[data-testid="stButton"] button, div[data-testid="stDownloadButton"] button {
+    background: rgba(8, 20, 38, 0.45) !important; border: 1.5px solid rgba(0, 235, 255, 0.85) !important;
+    border-radius: 8px !important; color: #33f3ff !important; font-weight: 700 !important; width: 100% !important;
 }
 </style>
-
 <div class="header-box">
     <div>
-        <div class="brand-row">
-            <span class="yt-icon">▶</span>
-            <span class="title-white">YouTube</span>
-        </div>
-        <div class="title-row">
-            <span class="title-dark">Video</span>
-            <span class="title-red">Downloader</span>
-        </div>
+        <div class="brand-row"><span class="yt-icon">▶</span><span class="title-white">YouTube</span></div>
+        <div class="title-row"><span class="title-dark">Video</span><span class="title-red">Downloader</span></div>
         <div class="subtitle-text">Save your favorite videos<br>anywhere, anywhere!</div>
-    </div>
-    <div class="top-right-container">
-        <div class="action-icons-row" style="gap: 10px;">
-            <a href="?page=youtube" class="icon-btn-style" title="Refresh" style="background: #090e1c; padding: 0; display: flex; align-items: center; justify-content: center; text-decoration: none;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ffffff" viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-            </a>
-            <form action="" method="get" style="margin: 0; display: inline-flex;">
-                <input type="hidden" name="page" value="home">
-                <button type="submit" class="icon-btn-style" title="Home / Reset" style="background: #090e1c; padding: 0; cursor: pointer;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ffffff" viewBox="0 0 24 24"><path d="M12 3l10 9h-3v9h-6v-6h-2v6h-6v-9h-3z"/></svg>
-                </button>
-            </form>
-        </div>
-        <div class="graphic-link-container">
-            <a href="https://www.youtube.com" target="_blank" class="graphic-link" title="Open YouTube">
-                <div class="watch-on-yt-text">WATCH ON YOUtube</div>
-                <div class="graphic-glow">
-                    <div class="video-player-card">
-                        <div class="vp-screen"><span class="vp-play-icon">▶</span></div>
-                        <div class="vp-label">YouTube</div>
-                        <div class="dl-badge-card">↓</div>
-                    </div>
-                </div>
-            </a>
-        </div>
     </div>
 </div>
 <div class="url-input-label"><span style="color: #ff001e;">▶</span> Youtube Link Paste</div>
@@ -400,78 +132,12 @@ url = st.text_input(
 if url != st.session_state.url_input:
   st.session_state.url_input = url
 
-components.html(
-    """
-    <script>
-    const parentDoc = window.parent.document;
-    
-    function attachInstantPasteListener() {
-        const input = parentDoc.querySelector('div[data-testid="stTextInput"] input');
-        if (input && !input.hasAttribute('data-instant-paste-listener')) {
-            input.setAttribute('data-instant-paste-listener', 'true');
-            
-            const forceStreamlitUpdate = () => {
-                const tracker = input._valueTracker;
-                if (tracker) {
-                    tracker.setValue('');
-                }
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-                input.dispatchEvent(new Event('change', { bubbles: true }));
-                input.blur();
-            };
-
-            input.addEventListener('paste', () => {
-                setTimeout(forceStreamlitUpdate, 100);
-            });
-
-            input.addEventListener('input', () => {
-                if (input.value && input.value.trim().length > 3) {
-                    setTimeout(forceStreamlitUpdate, 250);
-                }
-            });
-        }
-    }
-    
-    async function autoPasteFromClipboard() {
-        const input = parentDoc.querySelector('div[data-testid="stTextInput"] input');
-        if (input && !input.value) {
-            try {
-                const text = await navigator.clipboard.readText();
-                if (text && (text.includes('youtube.com') || text.includes('youtu.be'))) {
-                    input.value = text;
-                    const tracker = input._valueTracker;
-                    if (tracker) {
-                        tracker.setValue('');
-                    }
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                    input.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            } catch (err) {}
-        }
-    }
-    
-    setInterval(attachInstantPasteListener, 250);
-    
-    window.addEventListener('focus', () => {
-        setTimeout(autoPasteFromClipboard, 300);
-    });
-    </script>
-    """,
-    height=0,
-    width=0,
-)
-
 detected_format_index = 0
 if url and ".mkv" in url.lower():
   detected_format_index = 2
 elif url and ".webm" in url.lower():
   detected_format_index = 3
 
-st.markdown(
-    '<div class="section-label"><span style="color: #ff001e;">▶</span> Choose'
-    " Format :</div>",
-    unsafe_allow_html=True,
-)
 selected_format = st.radio(
     "Choose Format",
     ["MP4 (video)", "Mp3 (audio)", "MKV (video)", "WebM (video)"],
@@ -520,16 +186,13 @@ if not st.session_state.downloaded_file:
         mime_type = "video/webm"
         target_ext = "webm"
       else:
-        ydl_format = (
-            "bestvideo[ext=mp4][vcodec^=avc]+bestaudio[ext=m4a]/best[ext=mp4]/best"
-        )
+        ydl_format = "best[ext=mp4]/best"
         mime_type = "video/mp4"
         target_ext = "mp4"
 
       quality_tag = "Audio" if "MP3" in fmt_upper else "Best"
-
       base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-      
+
       if "MP3" in fmt_upper:
         music_dir = os.path.join(os.path.expanduser("~"), "Music")
         if not os.path.exists(music_dir):
@@ -553,19 +216,19 @@ if not st.session_state.downloaded_file:
           "outtmpl": outtmpl_str,
           "quiet": True,
           "noplaylist": True,
-          "retries": 3,
-          "fragment_retries": 3,
+          "retries": 5,
+          "fragment_retries": 5,
           "socket_timeout": 30,
           "extractor_args": {
               "youtube": {
-                  "player_client": ["android", "web"]
+                  "player_client": ["android", "ios", "web"]
               }
           },
           "http_headers": {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
               "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
               "Accept-Language": "en-US,en;q=0.5",
-          }
+          },
       }
 
       if cookies_file_path:
@@ -578,9 +241,7 @@ if not st.session_state.downloaded_file:
                 "preferredcodec": "mp3",
                 "preferredquality": "320",
             },
-            {
-                "key": "FFmpegMetadata",
-            },
+            {"key": "FFmpegMetadata"},
         ]
       else:
         ydl_opts["merge_output_format"] = target_ext
@@ -621,12 +282,6 @@ if not st.session_state.downloaded_file:
                         <div class="outer-orbit-ring">
                             <div class="neon-ring" style="--deg: {deg}deg;">
                                 <div class="neon-ring-inner">
-                                    <div class="neon-center-video-box">
-                                        <div class="neon-inner-screen">
-                                            <div class="neon-play-arrow">▶</div>
-                                        </div>
-                                        <div class="neon-dot-badge"></div>
-                                    </div>
                                     <div class="neon-percent-text">{current_p}%</div>
                                 </div>
                             </div>
@@ -637,76 +292,20 @@ if not st.session_state.downloaded_file:
                     """,
               unsafe_allow_html=True,
           )
-
         time.sleep(0.08)
 
       t.join()
 
       if download_error[0]:
         st.session_state.is_downloading = False
-        error_text = str(download_error[0])
-        st.error(f"Dik lo a awm tlat: {error_text}")
+        st.error(f"Dik lo a awm tlat: {str(download_error[0])}")
       else:
-        while current_p < 100:
-          current_p += 1
-          st.session_state.progress_val = current_p
-          deg = int((current_p / 100) * 360)
-          with progress_placeholder.container():
-            st.markdown(
-                f"""
-                        <div class="neon-loader-container">
-                            <div class="outer-orbit-ring">
-                                <div class="neon-ring" style="--deg: {deg}deg;">
-                                    <div class="neon-ring-inner">
-                                        <div class="neon-center-video-box">
-                                            <div class="neon-inner-screen">
-                                                <div class="neon-play-arrow">▶</div>
-                                            </div>
-                                            <div class="neon-dot-badge"></div>
-                                        </div>
-                                        <div class="neon-percent-text">{current_p}%</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="loading-title">Finalizing...</div>
-                            <div class="loading-subtitle">Almost done, please wait</div>
-                        </div>
-                        """,
-                unsafe_allow_html=True,
-            )
-          time.sleep(0.06)
-
         progress_placeholder.empty()
-
         st.session_state.downloaded_file = download_result[0]
         st.session_state.downloaded_mime = mime_type
         st.session_state.is_audio = "MP3" in fmt_upper
         st.session_state.is_downloading = False
         st.session_state.url_input = ""
-
-        if extracted_info[0]:
-          vid_title = extracted_info[0].get("title", "YouTube Video")
-          file_path = download_result[0]
-          file_size_mb = 0.0
-          if os.path.exists(file_path):
-            file_size_mb = round(
-                os.path.getsize(file_path) / (1024 * 1024), 1
-            )
-
-          if "downloads" not in st.session_state:
-            st.session_state.downloads = []
-
-          st.session_state.downloads.insert(
-              0,
-              {
-                  "title": vid_title,
-                  "platform": "YouTube/Web",
-                  "size": f"{file_size_mb} MB",
-                  "quality": "Best",
-                  "color": "#FF0000",
-              },
-          )
-
         st.rerun()
 
     except Exception as e:
