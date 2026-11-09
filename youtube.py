@@ -461,7 +461,6 @@ components.html(
     width=0,
 )
 
-# Auto-detect format based on pasted URL if applicable
 detected_format_index = 0
 if url and ".mkv" in url.lower():
   detected_format_index = 2
@@ -507,12 +506,6 @@ if not st.session_state.downloaded_file:
         target_url = target_url.split("?list=")[0]
 
       fmt_upper = selected_format.upper()
-
-      is_yt_link = (
-          "youtube.com" in target_url
-          or "youtu.be" in target_url
-          or "shorts" in target_url
-      )
 
       if "MP3" in fmt_upper:
         ydl_format = "bestaudio/best"
@@ -563,6 +556,11 @@ if not st.session_state.downloaded_file:
           "retries": 3,
           "fragment_retries": 3,
           "socket_timeout": 30,
+          "extractor_args": {
+              "youtube": {
+                  "player_client": ["android", "web"]
+              }
+          }
       }
 
       if cookies_file_path:
