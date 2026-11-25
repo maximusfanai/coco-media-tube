@@ -41,6 +41,9 @@ jobs:
           fi
 
       - name: Download and convert
+        env:
+          VIDEO_URL: ${{ inputs.url }}
+          FORMAT_TYPE: ${{ inputs.format_type }}
         run: |
           mkdir -p downloads
           COOKIE_ARG=""
@@ -48,12 +51,12 @@ jobs:
             COOKIE_ARG="--cookies cookies.txt"
           fi
 
-          if [ "${{ inputs.format_type }}" = "mp3" ]; then
+          if [ "$FORMAT_TYPE" = "mp3" ]; then
             yt-dlp --js-runtimes deno --remote-components ejs:github $COOKIE_ARG \
-              -x --audio-format mp3 -P downloads "${{ inputs.url }}"
+              -x --audio-format mp3 -P downloads "$VIDEO_URL"
           else
             yt-dlp --js-runtimes deno --remote-components ejs:github $COOKIE_ARG \
-              -f "bv*+ba/b" --merge-output-format mp4 -P downloads "${{ inputs.url }}"
+              -f "bv*+ba/b" --merge-output-format mp4 -P downloads "$VIDEO_URL"
           fi
 
       - name: Upload downloaded file
