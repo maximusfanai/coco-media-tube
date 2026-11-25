@@ -65,6 +65,20 @@ class CloudSafeYoutubeDL(_OriginalYoutubeDL):
     params.setdefault("nocheckcertificate", True)
     params.setdefault("retries", 5)
     params.setdefault("fragment_retries", 5)
+    params.setdefault(
+        "extractor_args",
+        {"youtube": {"player_client": ["android", "ios", "web"]}},
+    )
+    params.setdefault(
+        "http_headers",
+        {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                " (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            ),
+            "Accept-Language": "en-US,en;q=0.9",
+        },
+    )
     if COOKIE_FILE_PATH and os.path.exists(COOKIE_FILE_PATH):
       params.setdefault("cookiefile", COOKIE_FILE_PATH)
     super().__init__(params, *args, **kwargs)
