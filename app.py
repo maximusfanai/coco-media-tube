@@ -1,4 +1,5 @@
 import base64
+import io
 import os
 import shutil
 import subprocess
@@ -6,6 +7,7 @@ import sys
 import tempfile
 import time
 import urllib.parse
+import zipfile
 import requests
 import static_ffmpeg
 import streamlit as st
@@ -92,6 +94,71 @@ class CloudSafeYoutubeDL(_OriginalYoutubeDL):
 
 
 yt_dlp.YoutubeDL = CloudSafeYoutubeDL
+
+
+def download_via_github_actions(
+    video_url: str, media_format: str = "mp4", workflow_file: str = "download.yml"
+):
+  """Triggers GitHub Actions workflow and returns (filename, file_bytes) from artifact."""
+  token = _get_secret("GITHUB_TOKEN", "")
+  owner = _get_secret("GITHUB_OWNER", "maximusfanai")
+  repo = _get_secret("GITHUB_REPO", "coco-media-tube")
+  if not token:
+    raise RuntimeError("GITHUB_TOKEN Streamlit Secrets-ah a la dah luh lo.")
+
+  headers = {
+      "Authorization": f"Bearer {token}",
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+  }
+
+  dispatch_url = (
+      f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow_file}/dispatches"
+  )
+  res = requests.post(
+      dispatch_url,
+      headers=headers,
+      json={"ref": "main", "inputs": {"url": video_url, "format": media_format}},
+      timeout=15,
+  )
+  res.raise_for_status()
+
+  runs_url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs?per_page=5"
+  time.sleep(4)
+  run_id = None
+  for _ in range(45):
+    runs = requests.get(runs_url, headers=headers, timeout=15).json().get(
+        "workflow_runs", []
+    )
+    if runs:
+      latest = runs[0]
+      run_id = latest["id"]
+      if latest["status"] == "completed":
+        if latest["conclusion"] != "success":
+          raise RuntimeError(f"GitHub Actions failed: {latest['conclusion']}")
+        break
+    time.sleep(4)
+  else:
+    raise TimeoutError("GitHub Actions run a rei lutuk a, a hun a liam ta.")
+
+  artifacts_url = (
+      f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}/artifacts"
+  )
+  artifacts = requests.get(artifacts_url, headers=headers, timeout=15).json().get(
+      "artifacts", []
+  )
+  if not artifacts:
+    raise RuntimeError("Artifact hmuh a ni lo.")
+
+  zip_res = requests.get(
+      artifacts[0]["archive_download_url"], headers=headers, timeout=60
+  )
+  zip_res.raise_for_status()
+
+  with zipfile.ZipFile(io.BytesIO(zip_res.content)) as zf:
+    filename = zf.namelist()[0]
+    return filename, zf.read(filename)
+
 
 # Google OAuth 2.0 Config (loaded from Streamlit Secrets / .streamlit/secrets.toml)
 GOOGLE_CLIENT_ID = _get_secret("GOOGLE_CLIENT_ID", "")
