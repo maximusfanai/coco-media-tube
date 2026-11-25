@@ -72,36 +72,13 @@ class CloudSafeYoutubeDL(_OriginalYoutubeDL):
 
 yt_dlp.YoutubeDL = CloudSafeYoutubeDL
 
-
-def _resolve_redirect_uri() -> str:
-  explicit_uri = _get_secret("GOOGLE_REDIRECT_URI", "")
-  if explicit_uri:
-    return explicit_uri
-  try:
-    headers = getattr(st.context, "headers", None) or {}
-    host = (
-        headers.get("Host")
-        or headers.get("host")
-        or headers.get("X-Forwarded-Host")
-        or headers.get("x-forwarded-host")
-        or ""
-    ).strip()
-    if host:
-      if "localhost" in host or host.startswith("127.0.0.1"):
-        return f"http://{host}"
-      return f"https://{host}/"
-  except Exception:
-    pass
-  return "http://localhost:8501"
-
-
-# Google OAuth 2.0 Config
-GOOGLE_CLIENT_ID = _get_secret(
-    "GOOGLE_CLIENT_ID",
-    "962266911250-pudsi54nap6b9411kkc549cq4aovar7m.apps.googleusercontent.com",
-)
+# Google OAuth 2.0 Config (loaded from Streamlit Secrets / .streamlit/secrets.toml)
+GOOGLE_CLIENT_ID = _get_secret("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = _get_secret("GOOGLE_CLIENT_SECRET", "")
-GOOGLE_REDIRECT_URI = _resolve_redirect_uri()
+GOOGLE_REDIRECT_URI = _get_secret(
+    "GOOGLE_REDIRECT_URI",
+    _get_secret("REDIRECT_URI", "http://localhost:8501"),
+).rstrip("/")
 
 st.set_page_config(
     page_title="CoCo Media Tube",
@@ -141,8 +118,8 @@ def build_google_auth_url():
 def exchange_google_code(auth_code: str):
   if not GOOGLE_CLIENT_SECRET:
     st.session_state["oauth_debug"] = (
-        "GOOGLE_CLIENT_SECRET is empty. Add it in Streamlit Secrets or"
-        " environment variables."
+        "GOOGLE_CLIENT_SECRET is empty. Add it in .streamlit/secrets.toml"
+        " or Streamlit Cloud Secrets."
     )
     return None
   try:
@@ -356,11 +333,14 @@ elif not st.session_state["logged_in"]:
 
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-      google_auth_url = build_google_auth_url()
-      st.markdown(
-          f'<a href="{google_auth_url}" target="_self" class="oauth-btn">Sign in with Google</a>',
-          unsafe_allow_html=True,
-      )
+      if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        st.warning("Secrets-ah GOOGLE_CLIENT_ID leh GOOGLE_CLIENT_SECRET dah lut rawh.")
+      else:
+        google_auth_url = build_google_auth_url()
+        st.markdown(
+            f'<a href="{google_auth_url}" target="_blank" rel="noopener noreferrer" class="oauth-btn">Sign in with Google</a>',
+            unsafe_allow_html=True,
+        )
 
       if st.button("Back", use_container_width=True):
         st.session_state["show_google_auth"] = False
