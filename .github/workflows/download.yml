@@ -1,0 +1,60 @@
+name: Download Media
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Video URL"
+        required: true
+        default: "https://www.youtube.com/shorts/SzH3hhsLRu0"
+      format_type:
+        description: "Format (mp4 / mp3)"
+        required: true
+        default: "mp4"
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+
+      - name: Install yt-dlp and ffmpeg
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          pip install -U yt-dlp
+
+      - name: Write cookies from secret
+        if: ${{ secrets.YT_COOKIES != '' }}
+        run: |
+          echo "${{ secrets.YT_COOKIES }}" > cookies.txt
+
+      - name: Download and convert
+        run: |
+          mkdir -p downloads
+          COOKIE_ARG=""
+          if [ -f cookies.txt ]; then
+            COOKIE_ARG="--cookies cookies.txt"
+          fi
+
+          if [ "${{ inputs.format_type }}" = "mp3" ]; then
+            yt-dlp --js-runtimes deno --remote-components ejs:github $COOKIE_ARG \
+              -x --audio-format mp3 -P downloads "${{ inputs.url }}"
+          else
+            yt-dlp --js-runtimes deno --remote-components ejs:github $COOKIE_ARG \
+              -f "bv*+ba/b" --merge-output-format mp4 -P downloads "${{ inputs.url }}"
+          fi
+
+      - name: Upload downloaded file
+        uses: actions/upload-artifact@v4
+        with:
+          name: downloaded-media
+          path: downloads/*
