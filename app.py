@@ -1,5 +1,6 @@
 import base64
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -53,7 +54,7 @@ if yt_cookies:
   except Exception:
     pass
 
-# Global yt-dlp wrapper to attach cookies & bypass cloud 403 blocks
+# Global yt-dlp wrapper to attach cookies, JS runtime, and bypass cloud blocks
 _OriginalYoutubeDL = yt_dlp.YoutubeDL
 
 
@@ -65,6 +66,12 @@ class CloudSafeYoutubeDL(_OriginalYoutubeDL):
     params.setdefault("nocheckcertificate", True)
     params.setdefault("retries", 5)
     params.setdefault("fragment_retries", 5)
+
+    deno_exe = shutil.which("deno")
+    deno_config = {"path": deno_exe} if deno_exe else {}
+    params.setdefault("js_runtimes", {"deno": deno_config})
+    params.setdefault("remote_components", ["ejs:github"])
+
     params.setdefault(
         "extractor_args",
         {"youtube": {"player_client": ["android", "ios", "web"]}},
