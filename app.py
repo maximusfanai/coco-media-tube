@@ -72,15 +72,36 @@ class CloudSafeYoutubeDL(_OriginalYoutubeDL):
 
 yt_dlp.YoutubeDL = CloudSafeYoutubeDL
 
-# Google OAuth 2.0 Config (Client Secret is read from Streamlit Secrets / env only)
+
+def _resolve_redirect_uri() -> str:
+  explicit_uri = _get_secret("GOOGLE_REDIRECT_URI", "")
+  if explicit_uri:
+    return explicit_uri
+  try:
+    headers = getattr(st.context, "headers", None) or {}
+    host = (
+        headers.get("Host")
+        or headers.get("host")
+        or headers.get("X-Forwarded-Host")
+        or headers.get("x-forwarded-host")
+        or ""
+    ).strip()
+    if host:
+      if "localhost" in host or host.startswith("127.0.0.1"):
+        return f"http://{host}"
+      return f"https://{host}/"
+  except Exception:
+    pass
+  return "http://localhost:8501"
+
+
+# Google OAuth 2.0 Config
 GOOGLE_CLIENT_ID = _get_secret(
     "GOOGLE_CLIENT_ID",
     "962266911250-pudsi54nap6b9411kkc549cq4aovar7m.apps.googleusercontent.com",
 )
 GOOGLE_CLIENT_SECRET = _get_secret("GOOGLE_CLIENT_SECRET", "")
-GOOGLE_REDIRECT_URI = _get_secret(
-    "GOOGLE_REDIRECT_URI", "http://localhost:8501"
-)
+GOOGLE_REDIRECT_URI = _resolve_redirect_uri()
 
 st.set_page_config(
     page_title="CoCo Media Tube",
@@ -120,8 +141,8 @@ def build_google_auth_url():
 def exchange_google_code(auth_code: str):
   if not GOOGLE_CLIENT_SECRET:
     st.session_state["oauth_debug"] = (
-        "GOOGLE_CLIENT_SECRET is empty. Add it in .streamlit/secrets.toml"
-        " or environment variables."
+        "GOOGLE_CLIENT_SECRET is empty. Add it in Streamlit Secrets or"
+        " environment variables."
     )
     return None
   try:
