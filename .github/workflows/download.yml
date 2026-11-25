@@ -33,9 +33,12 @@ jobs:
           pip install -U yt-dlp
 
       - name: Write cookies from secret
-        if: ${{ secrets.YT_COOKIES != '' }}
+        env:
+          YT_COOKIES_DATA: ${{ secrets.YT_COOKIES }}
         run: |
-          echo "${{ secrets.YT_COOKIES }}" > cookies.txt
+          if [ -n "$YT_COOKIES_DATA" ]; then
+            printf '%s\n' "$YT_COOKIES_DATA" > cookies.txt
+          fi
 
       - name: Download and convert
         run: |
