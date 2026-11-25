@@ -1,42 +1,127 @@
+import io
 import os
+import tempfile
 import threading
 import time
+import zipfile
+import requests
 import static_ffmpeg
 import streamlit as st
 import streamlit.components.v1 as components
-import yt_dlp
-
-COOKIE_FILE = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "youtube_cookies.txt",
-)
-
-try:
-  cookies_secret = st.secrets.get("YOUTUBE_COOKIES") or st.secrets.get(
-      "YT_COOKIES", ""
-  )
-except Exception:
-  cookies_secret = ""
-
-if isinstance(cookies_secret, str) and cookies_secret.strip():
-  cleaned_cookies = cookies_secret.strip()
-  if not cleaned_cookies.startswith("# Netscape"):
-    cleaned_cookies = "# Netscape HTTP Cookie File\n" + cleaned_cookies
-
-  with open(COOKIE_FILE, "w", encoding="utf-8", newline="") as cookie_file:
-    cookie_file.write(cleaned_cookies + "\n")
 
 try:
   static_ffmpeg.add_paths()
 except Exception:
   pass
 
-st.set_page_config(
-    page_title="YouTube Video Downloader",
-    page_icon="▶",
-    layout="centered",
-    initial_sidebar_state="collapsed",
-)
+try:
+  st.set_page_config(
+      page_title="YouTube Video Downloader",
+      page_icon="▶",
+      layout="centered",
+      initial_sidebar_state="collapsed",
+  )
+except Exception:
+  pass
+
+
+def _get_gh_secret(key: str, default: str = "") -> str:
+  env_val = os.getenv(key, "")
+  if env_val and env_val.strip():
+    return env_val.strip()
+  try:
+    if key in st.secrets and str(st.secrets[key]).strip():
+      return str(st.secrets[key]).strip()
+  except Exception:
+    pass
+  return default
+
+
+def download_via_github_actions(
+    video_url: str, media_format: str = "mp4", workflow_file: str = "download.yml"
+) -> str:
+  """Triggers GitHub Actions workflow, downloads artifact zip, extracts media file, and returns local file path."""
+  token = _get_gh_secret("GITHUB_TOKEN", "")
+  owner = _get_gh_secret("GITHUB_OWNER", "maximusfanai")
+  repo = _get_gh_secret("GITHUB_REPO", "coco-media-tube")
+
+  if not token:
+    raise RuntimeError(
+        "GITHUB_TOKEN Streamlit Secrets-ah a la dah luh lo. Settings > Secrets-ah dah lut rawh."
+    )
+
+  headers = {
+      "Authorization": f"Bearer {token}",
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+  }
+
+  # 1. Trigger workflow_dispatch
+  dispatch_url = (
+      f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow_file}/dispatches"
+  )
+  dispatch_time = time.time() - 5
+  res = requests.post(
+      dispatch_url,
+      headers=headers,
+      json={"ref": "main", "inputs": {"url": video_url, "format": media_format}},
+      timeout=15,
+  )
+  if res.status_code not in (200, 201, 204):
+    raise RuntimeError(
+        f"Workflow trigger failed ({res.status_code}): {res.text}"
+    )
+
+  # 2. Poll workflow run until completed
+  runs_url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs?per_page=5"
+  time.sleep(4)
+  run_id = None
+  for _ in range(60):
+    runs_resp = requests.get(runs_url, headers=headers, timeout=15)
+    runs_resp.raise_for_status()
+    runs = runs_resp.json().get("workflow_runs", [])
+    if runs:
+      latest = runs[0]
+      run_id = latest["id"]
+      if latest["status"] == "completed":
+        if latest["conclusion"] != "success":
+          raise RuntimeError(
+              f"GitHub Actions download a hlawhchham ({latest['conclusion']}). Actions log en rawh."
+          )
+        break
+    time.sleep(4)
+  else:
+    raise TimeoutError("GitHub Actions download a rei lutuk a, a hun a liam ta.")
+
+  if not run_id:
+    raise RuntimeError("Workflow run ID hmuh a ni lo.")
+
+  # 3. Fetch artifact zip and extract media file
+  artifacts_url = (
+      f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}/artifacts"
+  )
+  art_resp = requests.get(artifacts_url, headers=headers, timeout=15)
+  art_resp.raise_for_status()
+  artifacts = art_resp.json().get("artifacts", [])
+  if not artifacts:
+    raise RuntimeError("GitHub Actions artifact hmuh a ni lo.")
+
+  zip_res = requests.get(
+      artifacts[0]["archive_download_url"], headers=headers, timeout=60
+  )
+  zip_res.raise_for_status()
+
+  out_dir = tempfile.mkdtemp(prefix="coco_yt_")
+  with zipfile.ZipFile(io.BytesIO(zip_res.content)) as zf:
+    members = [m for m in zf.namelist() if not m.endswith("/")]
+    if not members:
+      raise RuntimeError("Artifact zip chhungah file a awm lo.")
+    target_member = members[0]
+    extracted_path = os.path.join(out_dir, os.path.basename(target_member))
+    with open(extracted_path, "wb") as f_out:
+      f_out.write(zf.read(target_member))
+    return extracted_path
+
 
 query_params = st.query_params
 if query_params.get("page") == "home":
@@ -503,11 +588,9 @@ if not st.session_state.downloaded_file:
       fmt_upper = selected_format.upper()
 
       if "MP3" in fmt_upper:
-        ydl_format = "bestaudio/best"
         mime_type = "audio/mpeg"
         target_ext = "mp3"
       else:
-        ydl_format = "bestvideo*+bestaudio/best"
         mime_type = (
             "video/x-matroska"
             if "MKV" in fmt_upper
@@ -519,78 +602,18 @@ if not st.session_state.downloaded_file:
             else ("webm" if "WEBM" in fmt_upper else "mp4")
         )
 
-      quality_tag = "Audio" if "MP3" in fmt_upper else "Best"
-
-      base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-      if "MP3" in fmt_upper:
-        music_dir = os.path.join(os.path.expanduser("~"), "Music")
-        if not os.path.exists(music_dir):
-          try:
-            os.makedirs(music_dir, exist_ok=True)
-          except Exception:
-            music_dir = base_dir
-        outtmpl_str = os.path.join(music_dir, "%(title)s.%(ext)s")
-      else:
-        outtmpl_str = os.path.join(base_dir, f"%(title)s_{quality_tag}.%(ext)s")
-
       download_completed = [False]
       download_error = [None]
       download_result = [None]
-      extracted_info = [None]
-
-      cookies_file_path = COOKIE_FILE if os.path.isfile(COOKIE_FILE) else None
-
-      ydl_opts = {
-          "format": ydl_format,
-          "outtmpl": outtmpl_str,
-          "quiet": True,
-          "noplaylist": True,
-          "retries": 3,
-          "fragment_retries": 3,
-          "skip_unavailable_fragments": True,
-          "http_chunk_size": 5242880,
-          "socket_timeout": 15,
-          "nocheckcertificate": True,
-          "geo_bypass": True,
-          "http_headers": {
-              "User-Agent": (
-                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                  " (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-              ),
-              "Accept-Language": "en-US,en;q=0.9",
-          },
-      }
-
-      if cookies_file_path:
-        ydl_opts["cookiefile"] = cookies_file_path
-
-      if "MP3" in fmt_upper:
-        ydl_opts["postprocessors"] = [
-            {
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "320",
-            },
-            {
-                "key": "FFmpegMetadata",
-            },
-        ]
-      else:
-        ydl_opts["merge_output_format"] = target_ext
 
       def run_dl():
         try:
-          with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(target_url, download=True)
-            extracted_info[0] = info
-            filename = ydl.prepare_filename(info)
-            base, _ = os.path.splitext(filename)
-            expected_file = f"{base}.{target_ext}"
-            if os.path.exists(expected_file):
-              filename = expected_file
-            download_result[0] = filename
-            download_completed[0] = True
+          extracted_file = download_via_github_actions(
+              video_url=target_url,
+              media_format=target_ext,
+          )
+          download_result[0] = extracted_file
+          download_completed[0] = True
         except Exception as e:
           download_error[0] = e
           download_completed[0] = True
@@ -632,7 +655,7 @@ if not st.session_state.downloaded_file:
               unsafe_allow_html=True,
           )
 
-        time.sleep(0.05)
+        time.sleep(0.45)
 
       t.join()
 
@@ -672,20 +695,16 @@ if not st.session_state.downloaded_file:
 
         progress_placeholder.empty()
 
-        st.session_state.downloaded_file = download_result[0]
+        file_path = download_result[0]
+        st.session_state.downloaded_file = file_path
         st.session_state.downloaded_mime = mime_type
         st.session_state.is_audio = "MP3" in fmt_upper
         st.session_state.is_downloading = False
         st.session_state.url_input = ""
 
-        if extracted_info[0]:
-          vid_title = extracted_info[0].get("title", "YouTube Video")
-          file_path = download_result[0]
-          file_size_mb = 0.0
-          if os.path.exists(file_path):
-            file_size_mb = round(
-                os.path.getsize(file_path) / (1024 * 1024), 1
-            )
+        if file_path and os.path.exists(file_path):
+          vid_title = os.path.splitext(os.path.basename(file_path))[0]
+          file_size_mb = round(os.path.getsize(file_path) / (1024 * 1024), 1)
 
           if "downloads" not in st.session_state:
             st.session_state.downloads = []
